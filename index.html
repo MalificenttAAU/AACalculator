@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Item Profit Calculator</title>
+    <style>
+      th,
+      td {
+        border: 1px solid black;
+        padding: 15px;
+        text-align: left;
+      }
+      table {
+        border: 1px solid black;
+        border-collapse: collapse;
+      }
+      tr:first-child {
+        font-weight: bold;
+        background-color: #a2a2a2;
+      }
+      button {
+        font-size: 14px;
+        padding: 12px 28px;
+        background-color: #4caf50;
+        -webkit-transition-duration: 0.4s; /* Safari */
+        transition-duration: 0.4s;
+        box-shadow: 0 8px 16px 0 rgba(0, 0, 0, 0.2),
+          0 6px 20px 0 rgba(0, 0, 0, 0.19);
+      }
+
+      button:hover {
+        background-color: rgb(76, 228, 81);
+        color: white;
+      }
+
+      .redButton {
+        background-color: rgb(175, 76, 76);
+      }
+
+      .redButton:hover {
+        background-color: rgb(228, 76, 76);
+      }
+      .select-css {
+        display: block;
+        font-size: 16px;
+        font-family: sans-serif;
+        font-weight: 700;
+        color: #444;
+        line-height: 1.3;
+        padding: 0.6em 1.4em 0.5em 0.8em;
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+        margin: 0;
+        border: 1px solid #aaa;
+        box-shadow: 0 1px 0 1px rgba(0, 0, 0, 0.04);
+        border-radius: 0.5em;
+        -moz-appearance: none;
+        -webkit-appearance: none;
+        appearance: none;
+        background-color: #fff;
+        background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23007CB2%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E"),
+          linear-gradient(to bottom, #ffffff 0%, #e5e5e5 100%);
+        background-repeat: no-repeat, repeat;
+        background-position: right 0.7em top 50%, 0 0;
+        background-size: 0.65em auto, 100%;
+      }
+      .select-css::-ms-expand {
+        display: none;
+      }
+      .select-css:hover {
+        border-color: #888;
+      }
+      .select-css:focus {
+        border-color: #aaa;
+        box-shadow: 0 0 1px 3px rgba(59, 153, 252, 0.7);
+        box-shadow: 0 0 0 3px -moz-mac-focusring;
+        color: #222;
+        outline: none;
+      }
+      .select-css option {
+        font-weight: normal;
+      }
+    </style>
+    <script>
+      var GOLD_MULTIPLIER = 100 * 100;
+      var SILVER_MULTIPLIER = 100;
+
+      function goldToCopper(value) {
+        return value * GOLD_MULTIPLIER;
+      }
+
+      function silverToCopper(value) {
+        return value * SILVER_MULTIPLIER;
+      }
+
+      function copperToGold(value) {
+        return value / GOLD_MULTIPLIER;
+      }
+
+      function copperToSilver(value) {
+        return value / SILVER_MULTIPLIER;
+      }
+
+      function goldenize(value) {
+        var gold = Math.floor(copperToGold(value));
+        var silver = Math.floor(copperToSilver(value - goldToCopper(gold)));
+        var copper = Math.floor(value - goldToCopper(gold) - silverToCopper(silver));
+        return gold + "g " + silver + "s " + copper + "c";
+      }
+
+      function addComponent() {
+        var componentDiv = document.getElementById("components");
+        var componentTable = document.getElementById("componentTable");
+        var newRow = componentTable.insertRow(1);
+        var cellName = newRow.insertCell(0);
+        var cellGold = newRow.insertCell(1);
+        var cellLabor = newRow.insertCell(2);
+        var cellQuantity = newRow.insertCell(3);
+        var cellDelete = newRow.insertCell(4);
+        cellName.innerHTML = '<input type="text"/>';
+        cellGold.innerHTML = '<input type="number" value="0"/>';
+        cellLabor.innerHTML = '<input type="number" value="0"/>';
+        cellQuantity.innerHTML = '<input type="number" value="1"/>';
+        cellDelete.innerHTML =
+          '<button class="redButton" onClick="removeComponent(this)"> X </button>';
+      }
+
+      function removeComponent(button) {
+        var index = button.parentElement.parentElement.rowIndex;
+        var componentTable = document.getElementById("componentTable");
+        componentTable.deleteRow(index);
+      }
+
+      function calcTotals() {
+        var componentTable = document.getElementById("componentTable");
+
+        var totalGold = 0;
+        var totalLabor = 0;
+        var netGold = 0;
+        var goldPerLabor = 0;
+
+        for (var r = 1; r < componentTable.rows.length; r++) {
+          var row = componentTable.rows[r];
+          var cellName = row.cells[0];
+          var cellGold = row.cells[1];
+          var cellLabor = row.cells[2];
+          var cellQuantity = row.cells[3];
+          var cellDelete = row.cells[4];
+
+          var quantity = Number(cellQuantity.firstChild.value);
+          // get rid of NaN and undefined
+          quantity = quantity || 0;
+
+          totalGold += Number(cellGold.firstChild.value) * quantity;
+          totalLabor += Number(cellLabor.firstChild.value) * quantity;
+        }
+
+        var finalItemGoldValue =
+          Number(document.getElementById("finalItemGoldValue").value) || 0;
+        var finalItemQuantity =
+          Number(document.getElementById("finalItemQuantity").value) || 0;
+
+        finalItemGoldValue = finalItemGoldValue * finalItemQuantity;
+
+        document.getElementById("goldCost").innerHTML = goldenize(totalGold);
+        document.getElementById("laborCost").innerHTML = totalLabor;
+        document.getElementById("netGold").innerHTML = goldenize(
+          finalItemGoldValue - totalGold
+        );
+        document.getElementById("netGoldPerLabor").innerHTML = goldenize(
+          (finalItemGoldValue - totalGold) / totalLabor
+        );
+      }
+
+      function saveFile() {
+        var data = {};
+        data.components = {};
+
+        for (var r = 1; r < componentTable.rows.length; r++) {
+          var row = componentTable.rows[r];
+          var cellName = row.cells[0].firstChild.value;
+          var cellGold = row.cells[1].firstChild.value || 0;
+          var cellLabor = row.cells[2].firstChild.value || 0;
+          var cellQuantity = row.cells[3].firstChild.value || 0;
+
+          data.components[r] = {};
+          data.components[r].name = cellName;
+          data.components[r].gold = cellGold;
+          data.components[r].labor = cellLabor;
+          data.components[r].quantity = cellQuantity;
+        }
+
+        data.item = {};
+        data.item.name = finalItemName.value;
+        data.item.gold = finalItemGoldValue.value || 0;
+        data.item.quantity = finalItemQuantity.value || 0;
+
+        if (
+          !fileName.value ||
+          fileName.value == null ||
+          fileName.value.trim().length <= 0
+        ) {
+          fileName.setCustomValidity("Required");
+          return;
+        }
+        var savedData = JSON.parse(
+          window.localStorage.getItem("savedComponents")
+        );
+        if (!savedData) {
+          savedData = {};
+        }
+        savedData[fileName.value] = data;
+        window.localStorage.setItem(
+          "savedComponents",
+          JSON.stringify(savedData)
+        );
+        populateFiles();
+      }
+
+      function openFile() {
+        var componentDiv = document.getElementById("components");
+        var componentTable = document.getElementById("componentTable");
+        while (componentTable.rows.length > 1) {
+          componentTable.rows[1].remove();
+        }
+
+        var savedData = JSON.parse(
+          window.localStorage.getItem("savedComponents")
+        );
+
+        var selected =
+          fileListSelector.options[fileListSelector.selectedIndex].value;
+        var data = savedData[selected];
+        console.log(data);
+        for (key in data.components) {
+          console.log(key);
+          var newRow = componentTable.insertRow(1);
+          var cellName = newRow.insertCell(0);
+          var cellGold = newRow.insertCell(1);
+          var cellLabor = newRow.insertCell(2);
+          var cellQuantity = newRow.insertCell(3);
+          var cellDelete = newRow.insertCell(4);
+          cellName.innerHTML = '<input type="text"/>';
+          cellName.firstChild.value = data.components[key].name;
+          cellGold.innerHTML = '<input type="number"/>';
+          cellGold.firstChild.value = Number(data.components[key].gold) || 0;
+          cellLabor.innerHTML = '<input type="number" "/>';
+          cellLabor.firstChild.value = Number(data.components[key].labor) || 0;
+          cellQuantity.innerHTML = '<input type="number""/>';
+          cellQuantity.firstChild.value = Number(data.components[key].quantity) || 0;
+          cellDelete.innerHTML =
+            '<button class="redButton" onClick="removeComponent(this)"> X </button>';
+        }
+
+        finalItemName.value = data.item.name;
+        finalItemGoldValue.value = data.item.gold || 0;
+        finalItemQuantity.value = data.item.quantity || 0;
+
+      }
+
+      function populateFiles() {
+        var savedData = JSON.parse(
+          window.localStorage.getItem("savedComponents")
+        );
+
+        for (key in savedData) {
+          var node = document.createElement("option");
+          node.label = key;
+          node.value = key;
+          node.innerHTML = key;
+          fileListSelector.appendChild(node);
+        }
+      }
+    </script>
+  </head>
+
+  <body onload="populateFiles()">
+    <div>
+      <h1>Item Profit Calculator</h1>
+      <table id="fileOptionsTable">
+        <tr>
+          <td>Name: <input id="fileName" /></td>
+          <td><button onclick="saveFile()">Save</button></td>
+          <td><button onclick="openFile()">Open</button></td>
+        </tr>
+      </table>
+
+      <span
+        >Choose file below and click open to load a previosly saved file.</span
+      >
+      <select class="select-css" id="fileListSelector"> </select>
+    </div>
+    <div>
+      <h2>Totals</h2>
+      <button onclick="calcTotals()">Calculate</button>
+      <table id="itemTable">
+        <tr>
+          <td>Total Gold Cost</td>
+          <td>Total Labor Cost</td>
+          <td>Net Gold</td>
+          <td>Net Gold/Labor</td>
+        </tr>
+        <tr>
+          <td id="goldCost">0</td>
+          <td id="laborCost">0</td>
+          <td id="netGold">0</td>
+          <td id="netGoldPerLabor">0</td>
+        </tr>
+      </table>
+    </div>
+    <div>
+      <h2>Item To Build</h2>
+      <table id="itemTable">
+        <tr>
+          <td>Item Name</td>
+          <td>Gold Value (c)</td>
+          <td>Quantity</td>
+        </tr>
+        <tr>
+          <td><input id="finalItemName" type="text" /></td>
+          <td><input id="finalItemGoldValue" type="number" value="0" /></td>
+          <td><input id="finalItemQuantity" type="number" value="1" /></td>
+        </tr>
+      </table>
+    </div>
+    <div id="components">
+      <h2>Components</h2>
+      <button onclick="addComponent()">Add</button>
+      <table id="componentTable">
+        <tr>
+          <td>Item Name</td>
+          <td>Gold Cost (c)</td>
+          <td>Labor Cost</td>
+          <td>Quantity</td>
+          <td>Delete</td>
+        </tr>
+      </table>
+    </div>
+  </body>
+</html>
